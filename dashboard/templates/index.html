@@ -1075,7 +1075,7 @@
                         ${state.machines.map(machine => {
                             const machineId = machine.machineId || machine.machine_id || machine.name;
                             const displayName = getMachineName(machine);
-                            const isCustomName = state.hostnames[machineId] ? true : false;
+                            const isCustomName = !!state.hostnames[machineId];
                             return `
                             <div class="card entity-card clickable" onclick="window.location.hash = '/machines/${machineId}'">
                                 <div class="entity-header">
@@ -1114,7 +1114,7 @@
         function renderMachineDetail(machine, alerts) {
             const machineId = machine.machineId || machine.machine_id || machine.name;
             const displayName = getMachineName(machine);
-            const isCustomName = state.hostnames[machineId] ? true : false;
+            const isCustomName = !!state.hostnames[machineId];
             
             // Filter decisions from alerts
             const allDecisions = [];
@@ -1441,13 +1441,13 @@
 
         // Hash change handler
         window.addEventListener('hashchange', () => {
-            const hash = window.location.hash.slice(2); // Remove '#/'
+            const hash = window.location.hash.slice(2); // Remove '#/' prefix
             navigate(hash);
         });
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
-            const hash = window.location.hash.slice(2) || 'overview';
+            const hash = window.location.hash.slice(2) || 'overview'; // Remove '#/' prefix
             navigate(hash);
         });
     </script>
