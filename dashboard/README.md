@@ -132,6 +132,9 @@ Requires=crowdsec.service
 
 [Service]
 Type=simple
+# Note: Remplacez 'crowdsec' par l'utilisateur approprié sur votre système
+# Pour vérifier si l'utilisateur crowdsec existe : getent passwd crowdsec
+# Vous pouvez aussi utiliser votre utilisateur actuel ou créer un utilisateur dédié
 User=crowdsec
 Group=crowdsec
 WorkingDirectory=/chemin/vers/crowdsec/dashboard

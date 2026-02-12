@@ -211,8 +211,7 @@
             border-radius: 13px;
             padding: 1px;
             background: conic-gradient(from var(--angle), #ff0000, #ff7700, #ffff00, #00ff00, #0077ff, #8b00ff, #ff0000);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             mask-composite: exclude;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -762,8 +761,8 @@
                                         <td class="mono">${alert.source?.value || 'N/A'}</td>
                                         <td>${alert.events_count || 0}</td>
                                         <td>
-                                            <button class="btn btn-secondary" onclick="toggleAlertDetails(${alert.id})">Détails</button>
-                                            <button class="btn btn-danger" onclick="deleteAlert(${alert.id})">Supprimer</button>
+                                            <button class="btn btn-secondary btn-details" data-alert-id="${alert.id}">Détails</button>
+                                            <button class="btn btn-danger btn-delete-alert" data-alert-id="${alert.id}">Supprimer</button>
                                         </td>
                                     </tr>
                                     <tr id="alert-details-${alert.id}" class="hidden">
@@ -796,6 +795,21 @@
                     ` : '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Aucune alerte</div><div class="empty-state-subtext">Les alertes apparaîtront ici lorsqu\'elles seront détectées</div></div>'}
                 </div>
             `;
+            
+            // Add event listeners for alert buttons
+            document.querySelectorAll('.btn-details').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const alertId = e.target.getAttribute('data-alert-id');
+                    toggleAlertDetails(alertId);
+                });
+            });
+            
+            document.querySelectorAll('.btn-delete-alert').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const alertId = e.target.getAttribute('data-alert-id');
+                    deleteAlert(alertId);
+                });
+            });
         }
 
         function renderDecisions() {
@@ -838,7 +852,7 @@
                                         <td>${decision.origin || 'N/A'}</td>
                                         <td>${decision.duration || 'N/A'}</td>
                                         <td>
-                                            <button class="btn btn-danger" onclick="deleteDecision(${decision.id})">Supprimer</button>
+                                            <button class="btn btn-danger btn-delete-decision" data-decision-id="${decision.id}">Supprimer</button>
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -847,6 +861,14 @@
                     ` : '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">Aucune décision active</div><div class="empty-state-subtext">Les décisions apparaîtront ici lorsqu\'elles seront prises</div></div>'}
                 </div>
             `;
+            
+            // Add event listeners for decision delete buttons
+            document.querySelectorAll('.btn-delete-decision').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const decisionId = e.target.getAttribute('data-decision-id');
+                    deleteDecision(decisionId);
+                });
+            });
         }
 
         function renderMachines() {
@@ -963,11 +985,19 @@
 
         function filterAlerts() {
             const search = document.getElementById('alertSearch').value.toLowerCase();
-            const rows = document.querySelectorAll('#alertsTableBody tr');
+            const rows = document.querySelectorAll('#alertsTableBody tr[data-alert-id]');
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(search) ? '' : 'none';
+                const isVisible = text.includes(search);
+                row.style.display = isVisible ? '' : 'none';
+                
+                // Hide detail row if parent is hidden
+                const alertId = row.getAttribute('data-alert-id');
+                const detailRow = document.getElementById(`alert-details-${alertId}`);
+                if (detailRow && !isVisible) {
+                    detailRow.style.display = 'none';
+                }
             });
         }
 

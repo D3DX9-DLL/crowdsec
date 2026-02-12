@@ -85,12 +85,12 @@ def jwt_required(f):
     return decorated_function
 
 
-def run_cscli_command(command):
+def run_cscli_command(command_args):
     """Exécute une commande cscli et retourne le résultat JSON"""
     try:
         result = subprocess.run(
-            command,
-            shell=True,
+            command_args,
+            shell=False,
             capture_output=True,
             text=True,
             timeout=30
@@ -104,7 +104,7 @@ def run_cscli_command(command):
         return json.loads(result.stdout)
     
     except subprocess.TimeoutExpired:
-        print(f"⏱️ Timeout lors de l'exécution de : {command}")
+        print(f"⏱️ Timeout lors de l'exécution de : {' '.join(command_args)}")
         return None
     except json.JSONDecodeError as e:
         print(f"❌ Erreur de parsing JSON : {e}")
@@ -119,7 +119,16 @@ def run_cscli_command(command):
 @app.route('/')
 def index():
     """Sert le SPA (Single Page Application)"""
-    return render_template('index.html', refresh_interval=config['dashboard']['refresh_interval'])
+    # Valider et assainir l'intervalle de rafraîchissement
+    refresh_interval = config['dashboard'].get('refresh_interval', 30)
+    try:
+        refresh_interval = int(refresh_interval)
+        if refresh_interval < 5 or refresh_interval > 3600:
+            refresh_interval = 30  # Par défaut si hors limites
+    except (ValueError, TypeError):
+        refresh_interval = 30  # Par défaut si invalide
+    
+    return render_template('index.html', refresh_interval=refresh_interval)
 
 
 @app.route('/api/health')
@@ -248,7 +257,7 @@ def delete_decision(decision_id):
 @app.route('/api/machines')
 def get_machines():
     """Récupère la liste des machines via cscli"""
-    result = run_cscli_command('cscli machines list -o json')
+    result = run_cscli_command(['cscli', 'machines', 'list', '-o', 'json'])
     
     if result is None:
         return jsonify({'error': 'Erreur lors de la récupération des machines'}), 500
@@ -259,7 +268,7 @@ def get_machines():
 @app.route('/api/bouncers')
 def get_bouncers():
     """Récupère la liste des bouncers via cscli"""
-    result = run_cscli_command('cscli bouncers list -o json')
+    result = run_cscli_command(['cscli', 'bouncers', 'list', '-o', 'json'])
     
     if result is None:
         return jsonify({'error': 'Erreur lors de la récupération des bouncers'}), 500
@@ -270,7 +279,7 @@ def get_bouncers():
 @app.route('/api/metrics')
 def get_metrics():
     """Récupère les métriques via cscli"""
-    result = run_cscli_command('cscli metrics show -o json')
+    result = run_cscli_command(['cscli', 'metrics', 'show', '-o', 'json'])
     
     if result is None:
         return jsonify({'error': 'Erreur lors de la récupération des métriques'}), 500
