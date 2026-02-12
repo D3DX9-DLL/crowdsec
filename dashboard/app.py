@@ -160,7 +160,7 @@ def enrich_ip_with_geoip(ip):
     try:
         if provider == 'ip-api':
             # ip-api.com - gratuit, 45 req/min
-            url = f"http://ip-api.com/json/{ip}"
+            url = f"https://ip-api.com/json/{ip}"
             response = requests.get(url, timeout=5)
             response.raise_for_status()
             data = response.json()
@@ -635,16 +635,27 @@ def get_alerts_stats():
 
 @app.route('/api/stats/metrics')
 def get_metrics_stats():
-    """Retourne les métriques de trafic bloqué"""
+    """Retourne les métriques de trafic bloqué
+    
+    Note: Les estimations de ressources économisées (bytes, logs, storage)
+    sont des approximations basées sur des formules arbitraires :
+    - 1 décision = 1024 bytes bloqués (estimation moyenne)
+    - 1 décision = 10 lignes de log économisées (estimation)
+    - 1 ligne de log = 200 bytes (estimation)
+    
+    Les valeurs réelles peuvent varier significativement selon les types
+    d'attaque, les configurations réseau et les volumes de trafic.
+    Ces métriques sont fournies à titre indicatif uniquement.
+    """
     decisions = fetchAPI_internal('decisions')
     
     if not decisions:
         decisions = []
     
-    # Calculer les métriques estimées
+    # Calculer les métriques estimées (voir note ci-dessus)
     total_decisions = len(decisions)
     
-    # Estimation arbitraire : 1 décision = 1024 bytes bloqués
+    # Estimation arbitraire : 1 décision = 1024 bytes bloqués (moyenne)
     bytes_dropped = total_decisions * 1024
     packets_dropped = total_decisions
     requests_dropped = 0  # Pas de données disponibles

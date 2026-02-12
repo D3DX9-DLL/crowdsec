@@ -1289,6 +1289,7 @@
                                     const geoip = alert.geoip || {};
                                     const machineId = alert.machine_id;
                                     const machineName = machineId && state.hostnames[machineId] ? state.hostnames[machineId] : (machineId || 'N/A');
+                                    const numColumns = 9;  // Update this if columns change
                                     return `
                                     <tr data-alert-id="${alert.id}">
                                         <td>#${alert.id}</td>
@@ -1305,7 +1306,7 @@
                                         </td>
                                     </tr>
                                     <tr id="alert-details-${alert.id}" class="hidden">
-                                        <td colspan="9">
+                                        <td colspan="${numColumns}">
                                             <div class="alert-details">
                                                 <div class="detail-section">
                                                     <div class="detail-title">Machine</div>
@@ -1884,6 +1885,9 @@
             const attackDist = stats.attack_distribution || [];
             const resources = stats.resources_saved || {};
             const originBreakdown = traffic.origin_breakdown || [];
+            
+            // Note: Les métriques de ressources économisées sont des estimations
+            // basées sur des formules arbitraires (voir backend pour détails)
             
             document.getElementById('app').innerHTML = `
                 <div class="page-header">
