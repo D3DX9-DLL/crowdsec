@@ -256,7 +256,8 @@ def delete_decision(decision_id):
 
 @app.route('/api/machines')
 def get_machines():
-    """Récupère la liste des machines via cscli (nécessite sudo si cscli n'est pas accessible)"""
+    """Récupère la liste des machines via cscli (nécessite sudo si cscli n'est pas accessible)
+    Note: Pas de JWT requis car utilise cscli, pas l'API LAPI"""
     result = run_cscli_command(['cscli', 'machines', 'list', '-o', 'json'])
     
     if result is None:
@@ -275,7 +276,8 @@ def get_machines():
 
 @app.route('/api/machines/<machine_id>')
 def get_machine(machine_id):
-    """Récupère une machine spécifique"""
+    """Récupère une machine spécifique
+    Note: Pas de JWT requis car utilise cscli, pas l'API LAPI"""
     result = run_cscli_command(['cscli', 'machines', 'list', '-o', 'json'])
     
     if result is None:
@@ -302,7 +304,7 @@ def get_machine(machine_id):
 
 
 @app.route('/api/machines/<machine_id>/alerts')
-@jwt_required
+@jwt_required  # Required because this endpoint queries LAPI /v1/alerts which needs JWT auth
 def get_machine_alerts(machine_id):
     """Récupère les alertes d'une machine spécifique"""
     lapi_url = config['lapi']['url']
@@ -327,7 +329,8 @@ def get_machine_alerts(machine_id):
 
 @app.route('/api/bouncers')
 def get_bouncers():
-    """Récupère la liste des bouncers via cscli (nécessite sudo si cscli n'est pas accessible)"""
+    """Récupère la liste des bouncers via cscli (nécessite sudo si cscli n'est pas accessible)
+    Note: Pas de JWT requis car utilise cscli, pas l'API LAPI"""
     result = run_cscli_command(['cscli', 'bouncers', 'list', '-o', 'json'])
     
     if result is None:

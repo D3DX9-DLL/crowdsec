@@ -1385,7 +1385,9 @@
             // Update active nav link
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.remove('active');
-                const linkPage = link.getAttribute('href').slice(2); // Remove #/
+                const href = link.getAttribute('href');
+                // Extract page from href (e.g., '#/machines' -> 'machines')
+                const linkPage = href && href.startsWith('#/') ? href.slice(2) : '';
                 if (linkPage === page || (page.startsWith(linkPage + '/') && linkPage !== '')) {
                     link.classList.add('active');
                 }
