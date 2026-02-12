@@ -1272,7 +1272,7 @@
                     ${state.alerts.length > 0 ? `
                         <table>
                             <thead>
-                                <tr>
+                                <tr id="alertsTableHeader">
                                     <th>ID</th>
                                     <th>Date</th>
                                     <th>Scénario</th>
@@ -1289,7 +1289,8 @@
                                     const geoip = alert.geoip || {};
                                     const machineId = alert.machine_id;
                                     const machineName = machineId && state.hostnames[machineId] ? state.hostnames[machineId] : (machineId || 'N/A');
-                                    const numColumns = 9;  // Update this if columns change
+                                    // Calculate colspan dynamically from header row
+                                    const numColumns = document.querySelectorAll('#alertsTableHeader th').length || 9;
                                     return `
                                     <tr data-alert-id="${alert.id}">
                                         <td>#${alert.id}</td>

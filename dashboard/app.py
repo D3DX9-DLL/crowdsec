@@ -9,6 +9,7 @@ import sys
 import json
 import subprocess
 import time
+import ipaddress
 from datetime import datetime, timedelta
 from functools import wraps
 from collections import Counter
@@ -27,6 +28,14 @@ jwt_expiry = None
 # Cache GeoIP
 geoip_cache = {}
 GEOIP_CACHE_DURATION = 86400  # 24h par défaut
+
+# Constantes pour les estimations de métriques
+# Note: Ces valeurs sont des approximations arbitraires utilisées pour estimer
+# les ressources économisées. Les valeurs réelles varient selon les types d'attaque.
+BYTES_PER_DECISION = 1024      # Average bytes blocked per decision
+PACKETS_PER_DECISION = 1       # One packet per decision (simplified)
+LOG_LINES_PER_DECISION = 10    # Estimated log lines saved per decision
+BYTES_PER_LOG_LINE = 200       # Average bytes per log line
 
 
 def load_config():
@@ -135,6 +144,30 @@ def get_country_flag(country_code):
 
 def enrich_ip_with_geoip(ip):
     """Enrichit une IP avec les données GeoIP (pays, AS)"""
+    # Valider l'adresse IP pour prévenir les attaques SSRF
+    try:
+        ip_obj = ipaddress.ip_address(ip)
+        # Rejeter les adresses privées et loopback pour éviter SSRF
+        if ip_obj.is_private or ip_obj.is_loopback:
+            return {
+                'ip': ip,
+                'country_code': None,
+                'country_name': 'Private/Loopback',
+                'country_flag': '🏴',
+                'as_number': None,
+                'as_name': None
+            }
+    except ValueError:
+        # IP invalide
+        return {
+            'ip': ip,
+            'country_code': None,
+            'country_name': None,
+            'country_flag': None,
+            'as_number': None,
+            'as_name': None
+        }
+    
     # Vérifier si GeoIP est activé
     geoip_config = config.get('geoip', {})
     if not geoip_config.get('enabled', False):
@@ -160,6 +193,7 @@ def enrich_ip_with_geoip(ip):
     try:
         if provider == 'ip-api':
             # ip-api.com - gratuit, 45 req/min
+            # IP est déjà validée, safe pour interpolation
             url = f"https://ip-api.com/json/{ip}"
             response = requests.get(url, timeout=5)
             response.raise_for_status()
@@ -638,10 +672,8 @@ def get_metrics_stats():
     """Retourne les métriques de trafic bloqué
     
     Note: Les estimations de ressources économisées (bytes, logs, storage)
-    sont des approximations basées sur des formules arbitraires :
-    - 1 décision = 1024 bytes bloqués (estimation moyenne)
-    - 1 décision = 10 lignes de log économisées (estimation)
-    - 1 ligne de log = 200 bytes (estimation)
+    sont des approximations basées sur des formules arbitraires définies
+    dans les constantes BYTES_PER_DECISION, LOG_LINES_PER_DECISION, etc.
     
     Les valeurs réelles peuvent varier significativement selon les types
     d'attaque, les configurations réseau et les volumes de trafic.
@@ -652,13 +684,12 @@ def get_metrics_stats():
     if not decisions:
         decisions = []
     
-    # Calculer les métriques estimées (voir note ci-dessus)
+    # Calculate estimated metrics using defined constants
     total_decisions = len(decisions)
     
-    # Estimation arbitraire : 1 décision = 1024 bytes bloqués (moyenne)
-    bytes_dropped = total_decisions * 1024
-    packets_dropped = total_decisions
-    requests_dropped = 0  # Pas de données disponibles
+    bytes_dropped = total_decisions * BYTES_PER_DECISION
+    packets_dropped = total_decisions * PACKETS_PER_DECISION
+    requests_dropped = 0  # No data available from API
     
     # Breakdown par origine
     origins = [d.get('origin', 'unknown') for d in decisions]
@@ -700,10 +731,10 @@ def get_metrics_stats():
             'percentage': round((count / total_attacks) * 100, 1) if total_attacks else 0
         })
     
-    # Ressources économisées (estimations)
-    outgoing_traffic_dropped = bytes_dropped / (1024 * 1024)  # En MB
-    log_lines_saved = total_decisions * 10  # 1 décision = 10 lignes de log
-    storage_saved = (log_lines_saved * 200) / 1024  # 200 bytes par ligne, en KB
+    # Resources saved (estimations based on constants)
+    outgoing_traffic_dropped = bytes_dropped / (1024 * 1024)  # Convert to MB
+    log_lines_saved = total_decisions * LOG_LINES_PER_DECISION
+    storage_saved = (log_lines_saved * BYTES_PER_LOG_LINE) / 1024  # Convert to KB
     
     stats = {
         'traffic': {
